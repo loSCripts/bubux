@@ -1,52 +1,27 @@
-// LUMA — Service Worker (standalone version)
-// Same logic as the Blob-registered SW embedded in luma-streaming-app.html.
-// Use this file if you host index.html + manifest.json + sw.js as 3 separate
-// files instead of the single HTML file (more reliable install behavior on
-// some strict Android browsers). If you do, add to your HTML <head>:
-//   <link rel="manifest" href="manifest.json">
-// and replace the registerServiceWorker() body with:
-//   navigator.serviceWorker.register('sw.js', {scope: './'});
+// Bubux: Service Worker. Reseau d'abord (toujours la derniere version), cache en secours hors ligne.
+const CACHE_NAME = 'bubux-shell-v2';
 
-const CACHE_NAME = 'luma-shell-v1';
-
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
+self.addEventListener('install', () => { self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  const url = e.request.url;
-  const isTMDB = url.indexOf('api.themoviedb.org') > -1 || url.indexOf('image.tmdb.org') > -1;
-
+  const url = new URL(e.request.url);
+  const sameOrigin = url.origin === self.location.origin;
+  const isData = url.hostname.endsWith('workers.dev') || url.hostname === 'image.tmdb.org' || url.hostname === 'api.themoviedb.org';
+  if (!sameOrigin && !isData) return; // lecteur, YouTube, pubs : on ne touche pas
   e.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      if (isTMDB) {
-        // Network-first for TMDB data/images, falling back to cache when offline.
-        try {
-          const res = await fetch(e.request);
-          cache.put(e.request, res.clone());
-          return res;
-        } catch (err) {
-          const cached = await cache.match(e.request);
-          if (cached) return cached;
-          throw err;
-        }
-      }
-      // Cache-first for same-origin app shell files.
-      const cached = await cache.match(e.request);
-      if (cached) return cached;
-      const res = await fetch(e.request);
-      cache.put(e.request, res.clone());
-      return res;
-    })
+    fetch(e.request)
+      .then((res) => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
