@@ -1,0 +1,482 @@
+========================================================================
+Bubux — SPÉCIFICATION COMPLÈTE DE L'INTERFACE (design system + prompt)
+Document généré à partir de l'analyse de 10 captures d'écran fournies.
+========================================================================
+Ce fichier sert deux rôles :
+1) C'est le PLAN détaillé (couleurs hex, polices, animations, structure)
+   qui a servi à construire luma-streaming-app.html
+2) C'est un PROMPT réutilisable : tu peux copier n'importe quelle section
+   (ou le bloc "PROMPT CONDENSÉ" tout en bas) et la redonner à une IA
+   pour regénérer/adapter l'interface ailleurs.
+
+------------------------------------------------------------------------
+0. CE QUE C'EST — POSITIONNEMENT HONNÊTE DU PROJET
+------------------------------------------------------------------------
+Bubux est une app de DÉCOUVERTE / CATALOGUE de films et séries (type
+JustWatch / Letterboxd), pas un hébergeur vidéo. Toutes les données
+(affiches, notes, résumés, plateformes de diffusion, bandes-annonces)
+viennent de l'API publique TMDB (The Movie Database), interrogée
+directement depuis le navigateur avec une clé fournie par l'utilisateur.
+Il n'y a AUCUN backend, aucune vidéo piratée : le bouton "PLAY" lance la
+bande-annonce officielle YouTube (donnée légale fournie par TMDB), et les
+badges "disponible sur Netflix / Prime / etc." renvoient vers les sites
+officiels des plateformes (comme le fait JustWatch). C'est un choix
+technique délibéré, pas une limitation cachée — à garder si tu réutilises
+ce prompt ailleurs.
+
+Nom retenu : Bubux (logo = simple lettre "L" en Poppins ExtraBold, cf
+captures). Fichier unique HTML/CSS/JS, zéro dépendance de build, conforme
+à ta méthode (tout tourne depuis un téléphone Android, sans PC).
+
+------------------------------------------------------------------------
+1. PALETTE DE COULEURS (hexadécimal)
+------------------------------------------------------------------------
+Estimée à l'œil à partir des captures (pas de pipette pixel-perfect
+possible), organisée en tokens CSS custom properties.
+
+FONDS
+  --bg-void          #050506   fond racine, sous tout le reste
+  --bg-base          #0a0a0e   fond de l'accueil (Home) — quasi noir
+  --bg-elevated       #15151c   cartes, surfaces surélevées
+  --bg-elevated-2     #1c1c24   surfaces encore + hautes (popovers)
+  --glass-bg         rgba(14,14,18,.68)   verre dépoli (nav, pills sombres)
+  --glass-border     rgba(255,255,255,.09)
+
+FOND "AURORA" ANIMÉ (pages Recherche / Films / Séries / Mes Listes)
+  --aurora-1  #0d0620   violet quasi noir (zones sombres)
+  --aurora-2  #240f52   indigo profond
+  --aurora-3  #6d1fa0   violet moyen
+  --aurora-4  #b21f97   magenta-violet
+  --aurora-5  #e0299b   magenta vif (bande la plus saturée)
+  --aurora-6  #ff5cc4   rose lumineux (reflets/points chauds, usage rare)
+
+TEXTE
+  --text-1  #f5f5f7            texte principal (quasi blanc)
+  --text-2  rgba(245,245,247,.72)   texte secondaire (descriptions, meta)
+  --text-3  rgba(245,245,247,.46)   texte tertiaire (placeholders, labels)
+
+ACCENT (dégradé "action positive" : bouton Nouvelle Liste, sélections)
+  --accent-1  #e91e8c
+  --accent-2  #7c3aed
+  --accent-grad  linear-gradient(135deg,#e91e8c 0%,#7c3aed 100%)
+
+SÉMANTIQUE
+  --star       #f5f0e8   étoile de note (blanc cassé, PAS doré — cohérent
+                          avec les icônes calendrier/genre qui sont aussi
+                          blanc cassé sur les captures)
+  --danger     #ef4444   suppression/erreur
+  --success    #22c55e   confirmations (toast "ajouté")
+
+RAYONS
+  --r-pill   999px   (boutons, barre de nav, champs de recherche, filtres)
+  --r-card   16px    (affiches, vignettes)
+  --r-modal  22px    (popovers, modales)
+  --r-sm     10px    (petits éléments, badges)
+
+OMBRES
+  --shadow-soft   0 8px 30px rgba(0,0,0,.35)
+  --shadow-pop    0 14px 40px rgba(0,0,0,.5)
+
+------------------------------------------------------------------------
+2. TYPOGRAPHIE
+------------------------------------------------------------------------
+Deux familles Google Fonts (chargées via <link>, pas @import, pour la
+perf) :
+
+  DISPLAY  →  'Poppins'  (600/700/800/900) — géométrique, gras, utilisée
+              pour : logo "L", titres de page (Movies/TV Series/My
+              Lists/Discover something new), en-têtes de section,
+              boutons.
+  BODY     →  'Inter'    (400/500/600) — texte courant : descriptions,
+              titres de cartes, méta-infos (note/année/genre), listes.
+
+ÉCHELLE (mobile-first, clamp() pour la fluidité) :
+  Titre héros (fallback si pas de logo officiel)  clamp(2rem,10vw,3.4rem) / 800
+  Titre de page (Movies, TV Series, My Lists…)    clamp(1.7rem,7vw,2.15rem) / 700
+  Titre de section (Continue Watching, Trending…) 1.25rem / 700
+  Titre de carte (poster)                         .92rem / 600
+  Méta (étoile/année/genre)                       .78rem / 500, --text-2
+  Corps de texte / description                    .9rem / 400, line-height 1.45
+  Bouton PLAY                                      .92rem / 700, uppercase,
+                                                    letter-spacing .04em
+  Autres boutons                                  .88rem / 600
+
+------------------------------------------------------------------------
+3. FOND ANIMÉ "AURORA" — SPEC TECHNIQUE COMPLÈTE
+------------------------------------------------------------------------
+Utilisé en fond plein écran (position:fixed, z-index:0) sur les vues
+Recherche, Films, Séries, Mes Listes. Absent sur Home (fond uni --bg-base
++ parallaxe sur l'image héros, voir §8.1).
+
+Construction : un conteneur <div id="aurora-bg"> fixe contenant 4 "blobs"
+(<div class="blob">), chacun :
+  - grand cercle flouté : width/height ~70-90vmax, border-radius:50%
+  - filter: blur(70px) (60-90px selon le blob)
+  - background: radial-gradient radial avec une des couleurs --aurora-*
+  - mix-blend-mode: screen (pour que les couleurs se superposent en
+    s'éclaircissant, effet "aurore boréale")
+  - opacity ~.55-.85
+
+Animation continue (ambiante, tourne même sans scroll) :
+  @keyframes drift1 { 0%{transform:translate(-10%,-15%) scale(1)}
+                       50%{transform:translate(15%,10%) scale(1.15)}
+                       100%{transform:translate(-10%,-15%) scale(1)} }
+  Durées différentes par blob (24s, 31s, 27s, 35s) + delays différents
+  pour éviter tout effet de synchronisation mécanique. easing:
+  ease-in-out, infinite.
+
+Réaction au SCROLL (obligatoire selon le brief : "quand on défile, le
+fond doit être animé") — deux effets cumulés, pilotés par un listener
+scroll (en fait sur le conteneur de vue, throttlé via requestAnimationFrame) :
+  a) PARALLAXE : le calque aurora se déplace verticalement à 25% de la
+     vitesse du scroll (translateY(scrollY * -0.25)) → sensation de
+     profondeur, l'arrière-plan "traîne" derrière le contenu.
+  b) DÉRIVE CHROMATIQUE : filter: hue-rotate(scrollY * 0.04deg) appliqué
+     au conteneur aurora → les couleurs glissent doucement le long du
+     spectre magenta→violet→bleu au fil du défilement, puis reviennent
+     en remontant (réversible, pas cumulatif au-delà d'un cycle grâce à
+     un modulo 360 dans le JS).
+Sur Home (pas d'aurora), l'équivalent est : l'image de fond du héros fait
+un effet Ken Burns (scale 1→1.08 sur 20s en boucle) + translateY(scrollY*0.4)
+en parallaxe quand on défile la page.
+
+------------------------------------------------------------------------
+4. BARRE DE NAVIGATION BASSE (bottom nav) — SPEC COMPLÈTE
+------------------------------------------------------------------------
+Élément flottant, position:fixed, bottom: 18px, centré horizontalement,
+largeur auto (contenu), PAS pleine largeur (marge visible des deux
+côtés sur les captures).
+
+  - background: --glass-bg + backdrop-filter: blur(24px) saturate(160%)
+  - border: 1px solid --glass-border
+  - border-radius: --r-pill (forme pilule complète)
+  - padding: 10px 14px
+  - display:flex, 6 boutons, gap ~6-10px selon largeur d'écran
+  - hauteur totale ~64px
+
+6 ICÔNES DANS L'ORDRE (confirmé sur les captures) :
+  1. Accueil (maison)                → route #/home
+  2. Films (clap de cinéma)          → route #/movies
+  3. Séries (poste TV)               → route #/tv
+  4. Mes Listes (signet)             → route #/lists
+  5. Recherche (loupe)                → route #/search
+  6. Réglages (engrenage)             → ouvre le popover Réglages
+
+ÉTAT ACTIF : icône en blanc plein sur un disque translucide
+  background: rgba(255,255,255,.16), diamètre ~42px, transition
+  smooth (scale + background-color) ~250ms. Icônes inactives : simple
+  contour blanc ~90% opacité, pas de fond.
+
+BOUTON "RETOUR EN HAUT" (flottant, apparaît après ~400px de scroll) :
+  cercle 46px, --glass-bg + blur, flèche vers le haut, positionné en
+  bas à droite, au-dessus de la bottom nav (bottom: ~92px, right: 18px),
+  fade+scale in/out en fonction du scroll.
+
+------------------------------------------------------------------------
+5. COMPOSANTS
+------------------------------------------------------------------------
+5.1 CARTE AFFICHE (poster card) — ratio 2:3, border-radius --r-card,
+    image object-fit:cover, ombre légère. Sous l'image : titre (1 ligne,
+    ellipsis, --text-1, 600), puis ligne meta : ★ note "/10" · année,
+    --text-2, .78rem. Tap → navigation vers la fiche détail.
+    Appui long (500ms) → ouvre le sélecteur "Ajouter à une liste".
+
+5.2 CARTE "CONTINUE WATCHING" — ratio large ~16:9 (backdrop, pas
+    poster), mêmes coins arrondis. Overlay dégradé bas pour lisibilité
+    du texte. Sous l'image : titre + "S{saison} E{épisode} • {temps}
+    restant" (simulé, voir §12). Petit crayon en haut à droite de la
+    SECTION (pas de la carte) bascule un "mode édition" → une croix
+    apparaît sur chaque carte pour la retirer.
+
+5.3 BOUTONS DU HÉROS
+    - PLAY : pilule pleine --text-1 en fond (blanc cassé), texte/triangle
+      noir (--bg-void), padding généreux, uppercase, gras. Action :
+      lance la bande-annonce (si dispo) sinon ouvre la fiche.
+    - Segment [+ | ⓘ] : une seule pilule --glass-bg contenant deux zones
+      cliquables séparées par un séparateur vertical 1px
+      rgba(255,255,255,.2). "+" = ajouter à une liste. "ⓘ" = ouvrir la
+      fiche complète.
+
+5.4 PILLS DE FILTRE (pages Films/Séries) : "🎲" (icône seule, "Surprise
+    moi" = tire un titre populaire au hasard et ouvre sa fiche), puis
+    "Tous les genres ⌄", "Toutes les années ⌄", "• Populaire ⌄" (le
+    point avant "Populaire" = tri actif), "Tous fournisseurs ⌄". Fond
+    rgba(255,255,255,.13), texte --text-1, chevron bas.
+
+5.5 BOUTON DÉGRADÉ "+ Nouvelle liste" (page Mes Listes) : --accent-grad,
+    texte blanc gras, icône +, coins pleinement arrondis.
+
+5.6 POPOVER RÉGLAGES : apparaît au-dessus de l'icône engrenage de la
+    bottom nav, fond --bg-elevated-2 quasi opaque + léger flou,
+    border-radius --r-modal, 3 lignes séparées par des dividers
+    rgba(255,255,255,.08) : "Connexion" (icône flèche-vers-cadre),
+    "Réglages" (icône engrenage), "Shorts" (icône flamme).
+
+5.7 TOASTS : petite pilule en bas de l'écran (au-dessus de la bottom
+    nav), fond --bg-elevated-2, apparaît/disparaît en fondu+translateY,
+    auto-dismiss 2.4s. Utilisée pour CHAQUE action (ajout liste, clé API
+    enregistrée, erreur réseau, installation PWA, etc.) — c'est ce qui
+    rend "chaque bouton fonctionnel" perceptible.
+
+5.8 SKELETONS DE CHARGEMENT : rectangles --bg-elevated avec un
+    dégradé qui balaie de gauche à droite (shimmer, 1.4s loop) pendant
+    les appels réseau TMDB.
+
+5.9 MODALES (clé API, nouvelle liste, ajouter à une liste, profil
+    local) : plein écran mobile avec fond assombri rgba(0,0,0,.6) +
+    backdrop-blur, carte centrée --bg-elevated-2, --r-modal.
+
+------------------------------------------------------------------------
+6. VUES / PAGES — DÉTAIL PAR PAGE
+------------------------------------------------------------------------
+6.1 HOME (#/home) — fond uni --bg-base
+    - Héros plein écran en haut : backdrop du titre du moment (rotation
+      automatique toutes les 6s parmi le top 5 "trending"), dégradé
+      noir du bas + léger dégradé haut (lisibilité barre de statut),
+      logo TMDB (si dispo) ou titre en texte, ligne meta (★ note,
+      📅 année, icône-genre + nom du genre), description 2 lignes
+      ellipsis, boutons PLAY / [+ | ⓘ], points de pagination du
+      carrousel en bas à droite du héros.
+    - Section "Continue Watching" (si non vide)
+    - Section "Because you watched {titre}" — {titre} = dernier film vu
+      dans Continue Watching, sinon un titre populaire par défaut ;
+      chevron permet de changer la référence ; utilise
+      /movie/{id}/recommendations
+    - Section "Movies on {Provider}" avec sélecteur de plateforme
+      (dropdown façon capture 4, logos réels récupérés dynamiquement
+      via /watch/providers/movie)
+    - Section "Trending Movies" + lien "View All →" (va sur #/movies
+      trié par tendance)
+    - Section "Trending TV Shows" + "View All →"
+
+6.2 MOVIES (#/movies) et 6.3 TV SERIES (#/tv) — fond aurora
+    - Titre de page + sous-titre "Discover new movies/series to watch"
+    - Ligne de filtres (voir §5.4)
+    - Grille 2 colonnes de cartes affiche, scroll infini (pagination
+      TMDB, charge la page suivante ~300px avant le bas)
+
+6.4 SEARCH (#/search) — fond aurora
+    - Titre "Discover something new", champ de recherche pilule (icône
+      loupe), recherche live débattue (350ms) via /search/multi
+    - Si champ vide : "Trending Today" + grille 2 colonnes (mix
+      films/séries du jour)
+    - Si résultats : grille des résultats, un badge Film/Série sur
+      chaque carte
+
+6.5 MY LISTS (#/lists) — fond aurora
+    - "My Lists" + compteur "{n} / 15 lists" + bouton dégradé "+ New
+      List"
+    - Vide : icône ligne (3 barres + puces), "No lists yet", sous-texte
+    - Sinon : cartes de listes (nom, nombre d'éléments, mosaïque des 4
+      premières affiches) → tap ouvre #/lists/{id}
+
+6.6 FICHE DÉTAIL (#/title/{type}/{id})
+    - Même traitement héros que Home mais pour un titre précis
+    - Genres (icônes), durée/nb saisons, résumé complet
+    - "Disponible sur" : badges plateformes (logos réels TMDB) cliquables
+      → nouvel onglet vers le site officiel (attribution JustWatch en
+      petit texte, cf §10)
+    - Casting (scroll horizontal de têtes rondes + nom, si dispo)
+    - "Titres similaires" (recommendations)
+
+6.7 SHORTS (#/shorts) — bonus
+    - Défilement vertical plein écran (scroll-snap-type:y mandatory),
+      une bande-annonce par écran (image backdrop + bouton play central
+      → charge un <iframe> YouTube embed au tap)
+
+6.8 POPOVER RÉGLAGES (accessible partout via l'icône engrenage) : voir
+    §5.6. "Réglages" ouvre un panneau avec : gestion clé API TMDB
+    (voir/modifier/effacer), région de disponibilité (US/FR/…), bouton
+    "Installer l'application", mentions légales TMDB + JustWatch,
+    réinitialiser les données locales.
+
+------------------------------------------------------------------------
+7. ICÔNES
+------------------------------------------------------------------------
+Toutes en SVG en ligne (pas de police d'icônes externe → fonctionne
+hors-ligne), style trait uniforme : stroke="currentColor" fill="none"
+stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round",
+viewBox 24x24.
+Nav : maison, clap de cinéma, poste TV, signet, loupe, engrenage.
+UI : play (triangle plein), plus, i-info, crayon, chevron-bas,
+chevron-droite, flèche-haut, flèche-gauche, croix, étoile (pleine),
+calendrier, dé/shuffle ("Surprise moi"), corbeille, coche, flèche-cadre
+(connexion), flamme (Shorts), utilisateur.
+Genres (mapping par nom TMDB, ~20 icônes) : Action = épées croisées,
+Horror = fantôme, Romance = cœur, Comedy = masque souriant, Drama =
+masque triste, Science Fiction = fusée, Documentary = caméra, Crime =
+menottes, Adventure = boussole, Fantasy = baguette étincelle, History =
+parchemin, Music = note, Mystery = loupe, Thriller = œil, War = bouclier,
+Western = chapeau, Family = maison-cœur, Animation = étincelles,
+TV Movie = poste TV, défaut = pellicule de film.
+
+------------------------------------------------------------------------
+8. INTÉGRATION API — TMDB (The Movie Database)
+------------------------------------------------------------------------
+Choix assumé : TMDB est la seule API gratuite, orientée front-end, qui
+fournit affiches/notes/genres/plateformes/bandes-annonces avec un simple
+compte gratuit. Clé obtenue sur https://www.themoviedb.org/settings/api
+
+AUTHENTIFICATION (double support, auto-détection) :
+  - Si la clé collée ressemble à un JWT (contient des points, 3 segments
+    base64url) → traitée comme "API Read Access Token" v4, envoyée en
+    header  Authorization: Bearer <token>
+  - Sinon → traitée comme clé v3 classique, ajoutée en paramètre d'URL
+    ?api_key=<clé>
+  Les deux clés se trouvent au même endroit : Compte TMDB → Réglages →
+  API.
+
+BASE URLs
+  API      https://api.themoviedb.org/3
+  Images   https://image.tmdb.org/t/p/{taille}/{file_path}
+           tailles posters : w185, w342, w500 ; backdrops : w780, w1280
+           logos : w300 ; providers/logos : w92
+
+ENDPOINTS UTILISÉS
+  /trending/movie/day , /trending/tv/day , /trending/all/day
+  /movie/popular , /tv/popular
+  /discover/movie , /discover/tv  (filtres : with_genres, primary_release_year
+    / first_air_date_year, with_watch_providers, watch_region, sort_by)
+  /search/multi
+  /genre/movie/list , /genre/tv/list
+  /watch/providers/movie , /watch/providers/tv  (+ /get-available-regions)
+  /movie/{id} , /tv/{id}
+  /movie/{id}/videos , /tv/{id}/videos   (clé YouTube bande-annonce)
+  /movie/{id}/images , /tv/{id}/images   (logos officiels du titre)
+  /movie/{id}/recommendations , /tv/{id}/recommendations
+  /movie/{id}/watch/providers , /tv/{id}/watch/providers
+  /movie/{id}/credits , /tv/{id}/credits
+
+RÉGION PAR DÉFAUT : US (pour correspondre exactement aux captures
+fournies, qui montrent Hulu — service indisponible en France).
+Modifiable dans Réglages → région (FR proposé en priorité vu ta
+localisation).
+
+ATTRIBUTION OBLIGATOIRE (conditions TMDB) : mention "This product uses
+the TMDB API but is not endorsed or certified by TMDB" + logo TMDB dans
+Réglages → À propos. Pour les données de plateformes de streaming,
+attribution supplémentaire obligatoire à JustWatch (source réelle des
+données de disponibilité) — présente aussi dans Réglages → À propos et
+en petit texte sous les badges "Disponible sur".
+
+------------------------------------------------------------------------
+9. PWA — INSTALLATION SUR L'ÉCRAN D'ACCUEIL
+------------------------------------------------------------------------
+Un seul fichier HTML, donc astuces "single-file PWA" :
+  - Manifest : objet JSON encodé en base64, injecté via
+    <link rel="manifest" href="data:application/json;base64,...">
+    généré en JS au chargement (permet de rester 100% mono-fichier).
+  - Icônes : PNG 192/512 générées et encodées en base64 (dégradé
+    --accent-grad + "L" blanc Poppins Bold), embarquées directement
+    dans le manifest en data URI — zéro fichier externe.
+  - Service Worker : le code du SW est une chaîne JS, transformée en
+    Blob puis enregistrée via
+    navigator.serviceWorker.register(URL.createObjectURL(blob))
+    → cache "app shell" (stratégie cache-first pour le HTML/CSS/JS,
+    network-first pour les appels TMDB).
+  - beforeinstallprompt capturé → bouton "Installer l'app" personnalisé
+    dans Réglages (le mini-bandeau natif de Chrome n'apparaît pas
+    toujours selon l'heuristique d'engagement).
+
+LIMITES CONNUES (importantes, à lire) :
+  - Les Service Workers EXIGENT une origine http/https (localhost
+    accepté). Ils ne s'enregistrent PAS en ouvrant le fichier
+    directement (file://) ni dans l'aperçu sandboxé de Claude.ai
+    (iframe restreint). Le bouton "Installer" peut alors rester inactif
+    — ce n'est pas un bug du code, c'est une contrainte du navigateur.
+  - Pour une installation garantie : héberge le fichier (GitHub Pages,
+    Netlify, Vercel, ou un simple `python -m http.server` depuis Termux
+    sur ton téléphone — tu as déjà cet environnement). localStorage,
+    lui, fonctionne bien en file:// et dans la plupart des contextes.
+  - Deux fichiers bonus sont fournis en plus du HTML unique :
+    manifest.json et sw.js (mêmes contenus, extraits à part). Si tu
+    héberges les 3 fichiers séparément au lieu du mono-fichier, la
+    compatibilité PWA est encore plus large/fiable sur certains
+    navigateurs Android stricts sur les manifests data-URI.
+
+------------------------------------------------------------------------
+10. STOCKAGE LOCAL (schéma localStorage, clé racine "luma_state")
+------------------------------------------------------------------------
+{
+  auth: { type: "v3"|"v4", key: string } | null,
+  profile: { name: string, color: string } | null,
+  region: "US" | "FR" | ...,
+  lists: [ { id, name, createdAt, items:[{id,media_type,title,poster_path}] } ],
+  continueWatching: [ { id, media_type, title, image, progressLabel, updatedAt } ],
+  seenOnboarding: boolean
+}
+Dans l'aperçu Claude.ai (sandbox), si localStorage est bloqué, l'app
+retombe automatiquement sur un objet JS en mémoire (try/catch) : tout
+fonctionne pendant la session, juste sans persistance au rechargement.
+Une fois hébergé/ouvert en dehors de Claude, la persistance est totale.
+
+------------------------------------------------------------------------
+11. CARTOGRAPHIE DES INTERACTIONS (chaque bouton → sa fonction réelle)
+------------------------------------------------------------------------
+PLAY (héros/fiche)        → lit la bande-annonce YouTube officielle
++ (héros/carte, appui long)→ ouvre "Ajouter à une liste"
+ⓘ info                     → ouvre la fiche détail complète
+✎ Continue Watching        → bascule le mode suppression de la ligne
+chevron "Because you watched"→ change le titre de référence
+View All →                 → va sur #/movies ou #/tv trié "tendance"
+Dropdown plateforme (Home) → change le fournisseur affiché
+🎲 Surprise me              → tire un titre au hasard → sa fiche
+Filtres genre/année/tri/fournisseur → filtrent la grille en direct
+Barre de recherche          → recherche live TMDB /search/multi
++ New List                  → modale de création (max 15)
+Carte de liste               → ouvre le détail de la liste
+Icônes bottom nav (x6)       → changent de vue
+Bouton retour en haut         → scroll doux vers le haut
+Engrenage (nav)              → ouvre/ferme le popover Réglages
+Connexion (popover)          → modale profil local (nom + couleur)
+Réglages (popover)           → panneau clé API / région / install / crédits
+Shorts (popover)              → vue défilement vertical de bandes-annonces
+Badges "Disponible sur"       → ouvre le site officiel de la plateforme
+Flèche retour (Search/Detail)  → historique navigateur arrière
+
+------------------------------------------------------------------------
+12. ÉCARTS ASSUMÉS / DÉCISIONS PAR DÉFAUT (transparence)
+------------------------------------------------------------------------
+- Étoile de note en blanc cassé plutôt que doré (cohérence avec les
+  autres icônes meta de la capture — à changer facilement via --star
+  si tu préfères l'or classique façon IMDb).
+- Logos de titres ("FURIOUS" en rouge, "OBSESSION" glitch RVB) : on
+  tente de récupérer le vrai logo officiel via /images ; sinon repli sur
+  le titre en texte, gras, couleur --text-1.
+  Le style "glitch" spécifique n'est pas reproduit pixel pour pixel
+  (dépend de l'asset officiel réel), un repli propre est fourni.
+- "Continue Watching" et son "temps restant" sont simulés (pas de vrai
+  lecteur vidéo) : générés/à chaque fois qu'un utilisateur regarde une
+  bande-annonce, par souci de cohérence avec le concept "catalogue".
+- Providers affichés dans le dropdown "Movies on X" (Home) : récupérés
+  dynamiquement (nom + logo réels), pas une liste figée.
+
+========================================================================
+PROMPT CONDENSÉ (version compacte à copier-coller telle quelle ailleurs)
+========================================================================
+"Construis une PWA mono-fichier HTML/CSS/JS (aucune dépendance de build)
+nommée Bubux, app de découverte de films/séries (pas de streaming vidéo
+réel), branchée sur l'API TMDB avec clé saisie par l'utilisateur
+(détection auto clé v3 api_key vs token v4 Bearer JWT). Thème sombre :
+fond #0a0a0e (accueil) et fond animé "aurora" #0d0620→#e0299b→#ff5cc4 en
+blobs flous mix-blend-screen sur les pages Recherche/Films/Séries/Listes,
+avec parallaxe + hue-rotate liés au scroll. Polices Poppins (titres,
+700-900) + Inter (corps, 400-600). Barre de navigation basse flottante en
+verre dépoli (blur 24px), pilule, 6 icônes (Accueil/Films/Séries/
+Listes/Recherche/Réglages), icône active = disque blanc translucide.
+Cartes affiche ratio 2:3, coins 16px, titre + ★note/10 + année en
+dessous. Héros plein écran avec logo officiel du titre (fallback texte),
+dégradé bas, boutons PLAY (pilule blanche pleine) et +/i (pilule verre
+dépoli segmentée). Pages : Accueil (héros carrousel + Continue Watching +
+Because you watched + Movies on {Provider} + Trending), Films/Séries
+(filtres genre/année/tri/fournisseur + grille 2col + scroll infini),
+Recherche (recherche live + Trending Today), Mes Listes (max 15, bouton
+dégradé rose→violet #e91e8c→#7c3aed), popover Réglages (Connexion/
+Réglages/Shorts) déclenché par l'icône engrenage. Chaque bouton doit
+appeler une vraie fonction (toast de confirmation systématique). PWA :
+manifest + icônes en data-URI base64, Service Worker enregistré via Blob
+URL, bouton d'installation personnalisé sur beforeinstallprompt.
+localStorage avec repli mémoire si indisponible. Attribution TMDB +
+JustWatch obligatoire. Génère aussi manifest.json et sw.js en fichiers
+séparés en plus du mono-fichier."
+========================================================================
