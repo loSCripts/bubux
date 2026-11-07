@@ -130,6 +130,7 @@ svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke
   background:rgba(255,255,255,.14);border:none;color:#fff;width:38px;height:38px;flex:none;
   border-radius:50%;font-size:1.1rem;display:flex;align-items:center;justify-content:center;
 }
+.videasy-sandbox-on{background:rgba(34,197,94,.35)!important;box-shadow:inset 0 0 0 1px rgba(34,197,94,.8)}
 .videasy-container{flex:1;position:relative;width:100%;height:100%;background:#000}
 .videasy-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
 .videasy-unavailable{
@@ -567,12 +568,14 @@ svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke
     <h3 id="videasy-title">Lecture en cours...</h3>
     <button id="videasy-episodes-toggle" class="videasy-close" title="Épisodes" style="display:none">📺 <span id="videasy-episodes-toggle-label"></span></button>
     <button id="videasy-audio-lang-toggle" class="videasy-close" title="Changer la langue">🇫🇷</button>
+    <button id="videasy-sandbox-toggle" class="videasy-close videasy-sandbox-on" title="Sandbox : bloque l'ouverture de pages externes (activée)">🛡️</button>
+    <button id="videasy-source-toggle" class="videasy-close" title="Changer de source" style="display:none">🔁</button>
     <span class="videasy-close" aria-hidden="true" style="visibility:hidden;pointer-events:none"></span>
   </div>
   <div class="videasy-container" id="videasy-container">
     <iframe id="videasy-iframe" src="" width="100%" height="100%" frameborder="0"
-      allowfullscreen allow="encrypted-media; fullscreen; autoplay"
-      referrerpolicy="no-referrer"></iframe>
+      allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      referrerpolicy="origin"></iframe>
     <div class="videasy-rotate-hint">🔄 Tourne ton téléphone pour un plein écran optimal</div>
     <div class="videasy-unavailable" id="videasy-unavailable" style="display:none">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 8l8 8M16 8l-8 8"/></svg>
@@ -970,6 +973,13 @@ function infiniteRow(rowEl,fetchPage,opts){
     const first=st.page+1, last=Math.min(st.total,st.page+n);
     try{
       const pages=await Promise.all(Array.from({length:last-first+1},(_,i)=>fetchPage(first+i).catch(()=>null)));
+      if(!pages.some(Boolean)){
+        st.loading=false; st.fail=(st.fail||0)+1;
+        if(st.fail<4) setTimeout(()=>more(n),2000*st.fail);
+        else if(!st.seen.size) rowEl.innerHTML=emptyRowMsg();
+        return;
+      }
+      st.fail=0;
       let html='';
       pages.forEach(d=>{
         if(!d) return;
@@ -1038,14 +1048,19 @@ async function fetchLatestHeroItems(){
 
 /* Lecteur YouTube du hero : sans controles, non interactif, 5 s par film */
 const HERO_SLIDE_MS=5000, HERO_START=6;
-let heroYT={killed:false,killedAt:0,player:null,ready:false,unlocked:false,paused:false,offscreen:false,apiPromise:null,slideTimer:null,failTimer:null,io:null};
+let heroYT={apiBad:0,killed:false,killedAt:0,player:null,ready:false,unlocked:false,paused:false,offscreen:false,apiPromise:null,slideTimer:null,failTimer:null,io:null};
 function loadYTApi(){
   if(window.YT && window.YT.Player) return Promise.resolve();
   if(heroYT.apiPromise) return heroYT.apiPromise;
-  heroYT.apiPromise=new Promise(res=>{
+  heroYT.apiPromise=new Promise((res,rej)=>{
     const prev=window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady=()=>{ if(prev) try{prev();}catch(e){} res(); };
-    const sc=document.createElement('script'); sc.src='https://www.youtube.com/iframe_api'; document.head.appendChild(sc);
+    const to=setTimeout(()=>{ heroYT.apiPromise=null; rej(new Error('yt timeout')); },7000);
+    const ok=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{ clearTimeout(to); ok&&ok(); };
+    const sc=document.createElement('script'); sc.src='https://www.youtube.com/iframe_api';
+    sc.onerror=()=>{ clearTimeout(to); heroYT.apiPromise=null; rej(new Error('yt blocked')); };
+    document.head.appendChild(sc);
   });
   return heroYT.apiPromise;
 }
@@ -1086,7 +1101,7 @@ function heroKick(){
   const item=heroState.items[heroState.index]; if(!item) return;
   const token=heroState.token;
   if(item._ytKey && heroYT.player && heroYT.ready){
-    try{ heroYT.player.playVideo(); if(heroYT.unlocked) heroYT.player.unMute(); }catch(e){}
+    try{ heroYT.player.mute(); heroYT.player.playVideo(); }catch(e){}
     heroArmFail(token);
   } else if(!item._ytKey){ heroArmImg(token); }
 }
@@ -1099,7 +1114,8 @@ function heroTeardown(){ heroDestroyPlayer(); try{ if(heroYT.io) heroYT.io.disco
 async function heroPlayTrailer(item,token){
   const box=document.getElementById('hero-video');
   if(!box||!item._ytKey||heroYT.killed) return;
-  await loadYTApi();
+  if(Date.now()-heroYT.apiBad<60000){ heroArmImg(token); return; }   // secours : images seules
+  try{ await loadYTApi(); }catch(e){ heroYT.apiBad=Date.now(); console.warn('Bubux hero: YouTube indisponible, mode images',e&&e.message); heroArmImg(token); return; }
   if(token!==heroState.token || heroYT.killed || !document.getElementById('hero-video')) return;
   if(heroYT.player && heroYT.ready){
     try{
@@ -1124,7 +1140,7 @@ async function heroPlayTrailer(item,token){
         const f=box.querySelector('iframe'); if(f){ f.setAttribute('tabindex','-1'); f.setAttribute('aria-hidden','true'); }
         const cur=heroState.items[heroState.index];
         try{
-          if(heroYT.unlocked) e.target.unMute(); else e.target.mute();
+          e.target.mute();
           if(cur&&cur._ytKey){
             if(heroActive()){ e.target.loadVideoById({videoId:cur._ytKey,startSeconds:HERO_START}); heroArmFail(heroState.token); }
             else e.target.cueVideoById({videoId:cur._ytKey,startSeconds:HERO_START});
@@ -1134,6 +1150,7 @@ async function heroPlayTrailer(item,token){
       onStateChange:(e)=>{
         const vb=document.getElementById('hero-video');
         if(e.data===1){
+          try{ e.target.mute(); }catch(_){}
           if(!heroActive()){ try{ e.target.pauseVideo(); }catch(_){} return; }
           if(vb) vb.classList.add('on');
           clearTimeout(heroYT.failTimer); clearTimeout(heroYT.slideTimer);
@@ -1161,7 +1178,7 @@ async function heroPlayTrailer(item,token){
         const st=heroYT.player.getPlayerState?heroYT.player.getPlayerState():-1;
         if(st!==1 && cur && cur._ytKey) heroYT.player.loadVideoById({videoId:cur._ytKey,startSeconds:HERO_START});
         else heroYT.player.playVideo();
-        heroYT.player.unMute(); heroYT.player.setVolume(100);
+        heroYT.player.mute();
       }catch(e){}
     }
   }
@@ -1227,11 +1244,17 @@ async function renderHome(root){
 }
 
 /* ================= LIGNES INFINIES SUR L'ACCUEIL ================= */
+const FALLBACK_GENRES_MOVIE=[[28,'Action','Action'],[12,'Aventure','Adventure'],[16,'Animation','Animation'],[35,'Comédie','Comedy'],[80,'Crime','Crime'],[99,'Documentaire','Documentary'],[18,'Drame','Drama'],[10751,'Famille','Family'],[14,'Fantastique','Fantasy'],[27,'Horreur','Horror'],[9648,'Mystère','Mystery'],[10749,'Romance','Romance'],[878,'Science-fiction','Science Fiction'],[53,'Thriller','Thriller'],[10752,'Guerre','War'],[37,'Western','Western']];
+const FALLBACK_GENRES_TV=[[10759,'Action et aventure','Action & Adventure'],[16,'Animation','Animation'],[35,'Comédie','Comedy'],[80,'Crime','Crime'],[99,'Documentaire','Documentary'],[18,'Drame','Drama'],[10751,'Famille','Family'],[9648,'Mystère','Mystery'],[10765,'SF et fantastique','Sci-Fi & Fantasy'],[37,'Western','Western']];
+function genresOrFallback(mt){
+  const got=(mt==='movie'?CACHE.genresMovie:CACHE.genresTV)||[];
+  if(got.length) return got;
+  return (mt==='movie'?FALLBACK_GENRES_MOVIE:FALLBACK_GENRES_TV).map(g=>({id:g[0],name:CURRENT_LANG==='fr'?g[1]:g[2]}));
+}
 let homeRowN=0, homeRowLast=0;
 function homeRowDef(n){
   const mt=n%2===0?'movie':'tv';
-  const gl=(mt==='movie'?CACHE.genresMovie:CACHE.genresTV)||[];
-  if(!gl.length) return null;
+  const gl=genresOrFallback(mt);
   const idx=Math.floor(n/2), g=gl[idx%gl.length], cycle=Math.floor(idx/gl.length);
   const nowY=new Date().getFullYear(), dk=mt==='movie'?'primary_release_date':'first_air_date';
   const prm={with_genres:g.id,include_adult:false,sort_by:'popularity.desc','vote_count.gte':20};
@@ -1284,7 +1307,8 @@ function renderForYou(){
   });
 }
 async function openTasteQuiz(){
-  const list=(await ensureGenres('movie'))||[];
+  await ensureGenres('movie');
+  const list=genresOrFallback('movie');
   const tz=STATE.tastes||{};
   tasteDraft={type:tz.type||'both',era:tz.era||'any',genres:new Set(tz.genres||[])};
   const chips=(arr,act,cur)=>arr.map(o=>`<button class="taste-chip ${cur(o)?'on':''}" data-action="${act}" data-v="${o.v}">${escapeHtml(o.l)}</button>`).join('');
@@ -1338,7 +1362,7 @@ async function renderHeroSlide(){
   heroState.token=(heroState.token||0)+1; const myToken=heroState.token;
   heroClearTimers();
   const vbox=document.getElementById('hero-video'); if(vbox) vbox.classList.remove('on');
-  if(item._ytKey){ heroPlayTrailer(item,myToken); }
+  if(item._ytKey){ heroArmFail(myToken); heroPlayTrailer(item,myToken); }
   else{ try{ heroYT.player&&heroYT.player.pauseVideo&&heroYT.player.pauseVideo(); }catch(e){} heroArmImg(myToken); }
   const mediaType=item.media_type||'movie';
   const bg=document.getElementById('hero-bg-img');
@@ -1945,7 +1969,7 @@ let videasyCurrentSeason=null;
 let videasyCurrentEpisode=null;
 let videasySeasonsCache=null; // {seasons:[{season_number,episode_count,name}], episodesBySeason:{n:[...]}}
 let videasyNextEpisodeTimer=null;
-let videasySandboxEnabled=false; // activé par défaut pour protéger des pubs, désactivable par l'utilisateur
+let videasySandboxEnabled=(safeStorageGet('videasySandbox')!=='0'); // activé par défaut pour protéger des pubs, désactivable par l'utilisateur
 function videasyDetectDefaultLang(){
   // Détecte la langue du navigateur/appareil de l'utilisateur, plutôt que de
   // forcer le français pour tout le monde. Langues confirmées par la doc
@@ -1967,21 +1991,56 @@ function videasyApplySandboxAttribute(iframe){
   else iframe.removeAttribute('sandbox');
 }
 
+function videasyResumeSeconds(mt,id,season,episode){
+  const it=(STATE.continueWatching||[]).find(c=>String(c.id)===String(id)&&c.media_type===mt);
+  if(!it || !(it.seconds>15)) return 0;
+  if(it.pct && it.pct>=95) return 0;   // quasi fini : on repart du debut
+  if(mt==='tv' && (Number(it.season||1)!==Number(season||1) || Number(it.episode||1)!==Number(episode||1))) return 0;
+  return Math.max(0,Math.floor(it.seconds-3));
+}
+function fmtClock(sec){ sec=Math.floor(sec); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), r=sec%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(r).padStart(2,'0'); }
+let videasySource=(safeStorageGet('videasySource')==='fluxora')?'fluxora':'moviez';
+function videasyUpdateSourceButton(){
+  const b=document.getElementById('videasy-source-toggle'); if(!b) return;
+  b.style.display=(videasyCurrentMediaType==='movie')?'':'none';   // la source Moviez ne sert que les films
+  b.title='Changer de source (actuelle : '+(videasySource==='moviez'?'Moviez':'Fluxora')+')';
+}
+function videasyToggleSource(){
+  videasySource=videasySource==='moviez'?'fluxora':'moviez';
+  safeStorageSet('videasySource',videasySource);
+  videasyUpdateSourceButton();
+  showToast('Source : '+(videasySource==='moviez'?'Moviez':'Fluxora'));
+  if(videasyCurrentTmdbId && videasyIsOpen()){
+    const iframe=document.getElementById('videasy-iframe');
+    videasyCurrentUrl=videasyBuildUrl(videasyCurrentMediaType,videasyCurrentTmdbId,videasyCurrentSeason,videasyCurrentEpisode);
+    iframe.src='';
+    setTimeout(()=>{ iframe.src=videasyCurrentUrl; },30);
+  }
+}
 function videasyBuildUrl(mediaType,tmdbId,season,episode){
+  // Films : Moviez par defaut (secours : bouton de changement de source). Series : Fluxora.
+  if(mediaType==='movie' && videasySource==='moviez') return `https://api.moviez.ac/${tmdbId}`;
   // Paramètres conformes à la doc officielle nxsha.space/embed :
   // ?lang=xx (piste audio) et ?sub=xx (sous-titres), codes ISO 639-1.
   // Lecteur Fluxora : langue 'vf' si l'utilisateur est en francais, sinon 'vo'.
   const flxLang=(videasyAudioLang==='fr')?'vf':'vo';
   const base=`https://fluxora.sbs/embed/zenix?tmdb=${tmdbId}&type=${mediaType}&lang=${flxLang}&embed_mobile=1&pk=6O5dLJWmhoxPjmKdXWAtNlBRjxtv1O`;
-  if(mediaType==='movie') return base;
+  const sec=videasyResumeSeconds(mediaType,tmdbId,season,episode);
+  const rs=sec>0?`&progress=${sec}&t=${sec}&start=${sec}&startAt=${sec}`:'';
+  if(mediaType==='movie') return base+rs;
   if(mediaType==='tv'){
     const s=season||1, e=episode||1;
-    return `${base}&season=${s}&episode=${e}`;
+    return `${base}&season=${s}&episode=${e}${rs}`;
   }
   return null;
 }
 
+function titleAlreadyWatched(mt,id){
+  return !!((STATE.watched||{})[mt+'_'+id]) || (STATE.continueWatching||[]).some(c=>String(c.id)===String(id)&&c.media_type===mt);
+}
 function openVideasyPlayer(mediaType,tmdbId,title,season,episode){
+  // Deja regarde : ni message de soutien, ni onglet publicitaire, lecture directe (reprise au bon moment)
+  if(titleAlreadyWatched(mediaType,tmdbId)){ videasyReallyOpen(mediaType,tmdbId,title,season,episode); return; }
   openModal(`
     <div style="text-align:center;padding:6px 0 4px">
       <div style="font-size:2.6rem;line-height:1;margin-bottom:14px">❤️</div>
@@ -2032,6 +2091,7 @@ async function videasyReallyOpen(mediaType,tmdbId,title,season,episode){
   const url=videasyBuildUrl(mediaType,tmdbId,s,e);
   if(!url){ showToast('Type de média non supporté'); return; }
 
+  STATE.watched=STATE.watched||{}; STATE.watched[mediaType+'_'+tmdbId]=1; saveState();
   videasyCurrentMediaType=mediaType;
   videasyCurrentUrl=url;
   videasyCurrentTmdbId=tmdbId;
@@ -2047,6 +2107,7 @@ async function videasyReallyOpen(mediaType,tmdbId,title,season,episode){
   modal.style.display='flex';
   document.body.style.overflow='hidden';
   videasyUpdateLangButton();
+  videasyUpdateSandboxButton(); videasyUpdateSourceButton();
 
   const epToggle=document.getElementById('videasy-episodes-toggle');
   const nextBar=document.getElementById('videasy-next-episode-bar');
@@ -2060,6 +2121,8 @@ async function videasyReallyOpen(mediaType,tmdbId,title,season,episode){
     nextBar.classList.remove('show');
   }
   videasyScheduleNextEpisodeSuggestion();
+  videasyOpenToken=Date.now(); videasyLastCur=0; videasyRealMsgAt=0;
+  { const rsec=videasyResumeSeconds(mediaType,tmdbId,s,e); if(rsec>0) videasyForceSeek(rsec,videasyOpenToken); }
 
   // Enregistre tout de suite la progression réelle (saison/épisode en cours),
   // pour permettre une vraie reprise "au bon endroit" depuis l'accueil.
@@ -2098,14 +2161,21 @@ async function closeVideasyPlayer(fromPopstate){
   }
 }
 document.getElementById('close-videasy').addEventListener('click', ()=>closeVideasyPlayer());
+document.getElementById('videasy-sandbox-toggle').addEventListener('click', function(e){ e.stopPropagation(); videasyToggleSandbox(); });
+document.getElementById('videasy-source-toggle').addEventListener('click', function(e){ e.stopPropagation(); videasyToggleSource(); });
 
+function videasyUpdateSandboxButton(){
+  const btn=document.getElementById('videasy-sandbox-toggle'); if(!btn) return;
+  btn.classList.toggle('videasy-sandbox-on', videasySandboxEnabled);
+  btn.title=videasySandboxEnabled?"Sandbox activée : les pages externes sont bloquées (appuie pour désactiver)":"Sandbox désactivée (appuie pour activer)";
+}
 function videasyToggleSandbox(){
   videasySandboxEnabled=!videasySandboxEnabled;
+  safeStorageSet('videasySandbox', videasySandboxEnabled?'1':'0');
   const iframe=document.getElementById('videasy-iframe');
-  const btn=document.getElementById('videasy-sandbox-toggle');
   videasyApplySandboxAttribute(iframe);
-  btn.classList.toggle('videasy-sandbox-on', videasySandboxEnabled);
-  showToast(videasySandboxEnabled ? 'Sandbox activée' : 'Sandbox désactivée');
+  videasyUpdateSandboxButton();
+  showToast(videasySandboxEnabled ? 'Sandbox activée : pages externes bloquées' : 'Sandbox désactivée');
   // Le changement de l'attribut sandbox ne prend effet qu'au prochain
   // chargement : on force un rechargement de l'iframe sur le même contenu.
   if(videasyCurrentUrl && videasyIsOpen()){
@@ -2179,14 +2249,63 @@ document.getElementById('videasy-audio-lang-toggle').addEventListener('click', f
 videasyUpdateLangButton();
 
 /* --- Réception des messages du lecteur (best-effort, affine juste le %) --- */
+let videasyRealMsgAt=0, videasySavedAt=0, videasyLastCur=0, videasyOpenToken=0;
+function videasyForceSeek(sec,token){
+  const msgs=[{type:'seek',time:sec},{event:'seek',time:sec},{command:'seek',time:sec,currentTime:sec},{action:'seek',time:sec},
+    {type:'chrome:command',command:'seek',args:[sec]},{type:'chrome:command',command:'currentTime',args:[sec]},
+    {method:'setCurrentTime',value:sec},{event:'command',func:'seekTo',args:[sec,true]},{type:'SEEK',data:{time:sec}},{type:'player:seek',time:sec}];
+  [4000,9000,15000].forEach(d=>setTimeout(()=>{
+    if(token!==videasyOpenToken||!videasyIsOpen()) return;
+    if(Date.now()-videasyRealMsgAt<8000 && videasyLastCur>=sec-30) return;   // deja au bon endroit
+    const w=document.getElementById('videasy-iframe').contentWindow; if(!w) return;
+    msgs.forEach(m=>{ try{ w.postMessage(m,'*'); w.postMessage(JSON.stringify(m),'*'); }catch(e){} });
+  },d));
+}
+function extractPlayerTime(d){
+  let cur=null,dur=null,pct=null;
+  (function walk(o,depth){
+    if(!o||typeof o!=='object'||depth>4) return;
+    for(const k in o){
+      const v=o[k], kk=k.toLowerCase();
+      if(typeof v==='number'&&isFinite(v)){
+        if(cur===null && ['currenttime','current_time','time','timestamp','position','watched','seconds','playedseconds'].includes(kk) && v>=0 && v<100000) cur=v;
+        else if(dur===null && ['duration','totalduration','total','runtime'].includes(kk) && v>0 && v<100000) dur=v;
+        else if(pct===null && kk==='progress' && v>=0 && v<=100) pct=v;
+      } else if(v&&typeof v==='object') walk(v,depth+1);
+    }
+  })(d,0);
+  return {cur,dur,pct};
+}
+function videasySaveSeconds(cur,dur,pct){
+  const it=(STATE.continueWatching||[]).find(c=>String(c.id)===String(videasyCurrentTmdbId)&&c.media_type===videasyCurrentMediaType);
+  if(!it) return;
+  it.seconds=Math.floor(cur);
+  if(dur&&dur>0) it.pct=Math.min(100,cur/dur*100); else if(pct!=null) it.pct=pct;
+  const c=fmtClock(it.seconds);
+  it.progressLabel=it.media_type==='tv'?`S${it.season||1} E${it.episode||1} · ${c}`:`Reprendre à ${c}`;
+  saveState();
+}
 window.addEventListener('message', function(event){
-  if(!event.origin.includes('autoembed') && !event.origin.includes('nxsha.space')) return;
+  if(!videasyIsOpen()) return;
+  if(/youtube\.com|youtube-nocookie\.com/.test(event.origin)) return;
   try{
     const data=typeof event.data==='string'?JSON.parse(event.data):event.data;
-    if(!data) return;
-    if(data.id && data.type && typeof data.progress==='number') videasyLastKnownProgressPct=Math.round(data.progress);
-  }catch(e){ /* message non JSON ou format inattendu, on ignore sans bloquer */ }
+    if(!data||typeof data!=='object') return;
+    const r=extractPlayerTime(data);
+    if(r.cur!==null && r.cur>0){
+      videasyRealMsgAt=Date.now(); videasyLastCur=r.cur;
+      if(Date.now()-videasySavedAt>4000){ videasySavedAt=Date.now(); videasySaveSeconds(r.cur,r.dur,r.pct); }
+    }
+  }catch(e){ /* message non JSON : on ignore */ }
 });
+// Repli si le lecteur n'envoie aucune position : estimation par le temps passe dans le lecteur
+setInterval(function(){
+  if(!videasyIsOpen()||document.hidden) return;
+  if(Date.now()-videasyRealMsgAt<20000) return;
+  const it=(STATE.continueWatching||[]).find(c=>String(c.id)===String(videasyCurrentTmdbId)&&c.media_type===videasyCurrentMediaType);
+  if(!it) return;
+  videasySaveSeconds((it.seconds||0)+5,null,null);
+},5000);
 
 let videasyLastKnownProgressPct=null;
 
@@ -2215,6 +2334,10 @@ function logRealProgress(){
     progressLabel, updatedAt:Date.now(),
     season:videasyCurrentSeason, episode:videasyCurrentEpisode
   };
+  { const prev=existingIndex>-1?STATE.continueWatching[existingIndex]:null;
+    const same=prev && (mediaType==='movie' || (Number(prev.season||1)===Number(videasyCurrentSeason||1) && Number(prev.episode||1)===Number(videasyCurrentEpisode||1)));
+    newItem.seconds=same?(prev.seconds||0):0; newItem.pct=same?(prev.pct||0):0;
+    if(newItem.seconds>15){ const c=fmtClock(newItem.seconds); newItem.progressLabel=mediaType==='tv'?`S${videasyCurrentSeason||1} E${videasyCurrentEpisode||1} · ${c}`:`Reprendre à ${c}`; } }
 
   const finish=(item)=>{
     if(existingIndex>-1) STATE.continueWatching.splice(existingIndex,1);
