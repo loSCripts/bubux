@@ -569,7 +569,6 @@ svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke
     <button id="videasy-episodes-toggle" class="videasy-close" title="Épisodes" style="display:none">📺 <span id="videasy-episodes-toggle-label"></span></button>
     <button id="videasy-audio-lang-toggle" class="videasy-close" title="Changer la langue">🇫🇷</button>
     <button id="videasy-sandbox-toggle" class="videasy-close videasy-sandbox-on" title="Sandbox : bloque l'ouverture de pages externes (activée)">🛡️</button>
-    <button id="videasy-source-toggle" class="videasy-close" title="Changer de source" style="display:none">🔁</button>
     <span class="videasy-close" aria-hidden="true" style="visibility:hidden;pointer-events:none"></span>
   </div>
   <div class="videasy-container" id="videasy-container">
@@ -1973,7 +1972,7 @@ let videasySandboxEnabled=(safeStorageGet('videasySandbox')!=='0'); // activé p
 function videasyDetectDefaultLang(){
   // Détecte la langue du navigateur/appareil de l'utilisateur, plutôt que de
   // forcer le français pour tout le monde. Langues confirmées par la doc
-  // nxsha.space (codes ISO 639-1) : en, es, hi, fr. Repli sur 'fr' si aucune
+  // moviez.ac (codes ISO 639-1) : en, es, hi, fr. Repli sur 'fr' si aucune
   // des langues du navigateur ne correspond.
   const supported=['fr','en','es','hi'];
   const langs=(navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language||''];
@@ -1999,40 +1998,18 @@ function videasyResumeSeconds(mt,id,season,episode){
   return Math.max(0,Math.floor(it.seconds-3));
 }
 function fmtClock(sec){ sec=Math.floor(sec); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), r=sec%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(r).padStart(2,'0'); }
-let videasySource=(safeStorageGet('videasySource')==='fluxora')?'fluxora':'moviez';
-function videasyUpdateSourceButton(){
-  const b=document.getElementById('videasy-source-toggle'); if(!b) return;
-  b.style.display=(videasyCurrentMediaType==='movie')?'':'none';   // la source Moviez ne sert que les films
-  b.title='Changer de source (actuelle : '+(videasySource==='moviez'?'Moviez':'Fluxora')+')';
-}
-function videasyToggleSource(){
-  videasySource=videasySource==='moviez'?'fluxora':'moviez';
-  safeStorageSet('videasySource',videasySource);
-  videasyUpdateSourceButton();
-  showToast('Source : '+(videasySource==='moviez'?'Moviez':'Fluxora'));
-  if(videasyCurrentTmdbId && videasyIsOpen()){
-    const iframe=document.getElementById('videasy-iframe');
-    videasyCurrentUrl=videasyBuildUrl(videasyCurrentMediaType,videasyCurrentTmdbId,videasyCurrentSeason,videasyCurrentEpisode);
-    iframe.src='';
-    setTimeout(()=>{ iframe.src=videasyCurrentUrl; },30);
-  }
-}
 function videasyBuildUrl(mediaType,tmdbId,season,episode){
-  // Films : Moviez par defaut (secours : bouton de changement de source). Series : Fluxora.
-  if(mediaType==='movie' && videasySource==='moviez') return `https://api.moviez.ac/${tmdbId}`;
-  // Paramètres conformes à la doc officielle nxsha.space/embed :
-  // ?lang=xx (piste audio) et ?sub=xx (sous-titres), codes ISO 639-1.
-  // Lecteur Fluxora : langue 'vf' si l'utilisateur est en francais, sinon 'vo'.
-  const flxLang=(videasyAudioLang==='fr')?'vf':'vo';
-  const base=`https://fluxora.sbs/embed/zenix?tmdb=${tmdbId}&type=${mediaType}&lang=${flxLang}&embed_mobile=1&pk=6O5dLJWmhoxPjmKdXWAtNlBRjxtv1O`;
+  // Source unique : Moviez (api.moviez.ac). Aucune autre source, aucun repli.
+  // Film : /<tmdb>   Serie : /serie/<tmdb>/<saison>/<episode>   Options : ?autoplay=1  ?lang=vo
+  let url;
+  if(mediaType==='movie') url=`https://api.moviez.ac/${tmdbId}`;
+  else if(mediaType==='tv') url=`https://api.moviez.ac/serie/${tmdbId}/${season||1}/${episode||1}`;
+  else return null;
+  const q=['autoplay=1'];
+  if(videasyAudioLang!=='fr') q.push('lang=vo');
   const sec=videasyResumeSeconds(mediaType,tmdbId,season,episode);
-  const rs=sec>0?`&progress=${sec}&t=${sec}&start=${sec}&startAt=${sec}`:'';
-  if(mediaType==='movie') return base+rs;
-  if(mediaType==='tv'){
-    const s=season||1, e=episode||1;
-    return `${base}&season=${s}&episode=${e}${rs}`;
-  }
-  return null;
+  if(sec>0) q.push('t='+sec,'start='+sec,'progress='+sec);
+  return url+'?'+q.join('&');
 }
 
 function titleAlreadyWatched(mt,id){
@@ -2050,7 +2027,7 @@ function openVideasyPlayer(mediaType,tmdbId,title,season,episode){
       <p class="sub" style="margin-bottom:14px;line-height:1.5;font-size:.8rem;opacity:.8">⚠️ Certains films et séries indiqués comme doublés en français ne le sont pas toujours réellement selon la source : ceci ne dépend pas de Bubux.</p>
       <details style="margin-bottom:18px;text-align:left">
         <summary style="cursor:pointer;font-size:.75rem;opacity:.7;color:var(--text-2)">Clause de non-responsabilité (source du lecteur)</summary>
-        <p class="sub" style="margin-top:8px;line-height:1.5;font-size:.72rem;opacity:.7">Bubux n'héberge, ne stocke ni ne distribue aucun contenu protégé par le droit d'auteur. Le lecteur intégré est fourni par Nxsha, un service d'indexation qui agrège des liens vers du contenu accessible publiquement sur des sites web tiers, à l'instar d'un moteur de recherche. Ni Bubux ni Nxsha ne contrôlent ni n'approuvent le contenu accessible via ces liens. La responsabilité du contenu incombe entièrement aux fournisseurs tiers respectifs. Pour toute question relative au droit d'auteur, veuillez consulter la politique DMCA de Nxsha ou les contacter à nxsha@proton.me.</p>
+        <p class="sub" style="margin-top:8px;line-height:1.5;font-size:.72rem;opacity:.7">Bubux n'héberge, ne stocke ni ne distribue aucun contenu protégé par le droit d'auteur. Le lecteur intégré est fourni par Moviez, un service d'indexation qui agrège des liens vers du contenu accessible publiquement sur des sites web tiers, à l'instar d'un moteur de recherche. Ni Bubux ni Moviez ne contrôlent ni n'approuvent le contenu accessible via ces liens. La responsabilité du contenu incombe entièrement aux fournisseurs tiers respectifs. Pour toute question relative au droit d'auteur, veuillez consulter la politique DMCA de Moviez.</p>
       </details>
       <button class="btn-play" style="width:100%;justify-content:center" id="videasy-disclaimer-confirm">▶ Regarder</button>
     </div>
@@ -2107,7 +2084,7 @@ async function videasyReallyOpen(mediaType,tmdbId,title,season,episode){
   modal.style.display='flex';
   document.body.style.overflow='hidden';
   videasyUpdateLangButton();
-  videasyUpdateSandboxButton(); videasyUpdateSourceButton();
+  videasyUpdateSandboxButton();
 
   const epToggle=document.getElementById('videasy-episodes-toggle');
   const nextBar=document.getElementById('videasy-next-episode-bar');
@@ -2162,7 +2139,6 @@ async function closeVideasyPlayer(fromPopstate){
 }
 document.getElementById('close-videasy').addEventListener('click', ()=>closeVideasyPlayer());
 document.getElementById('videasy-sandbox-toggle').addEventListener('click', function(e){ e.stopPropagation(); videasyToggleSandbox(); });
-document.getElementById('videasy-source-toggle').addEventListener('click', function(e){ e.stopPropagation(); videasyToggleSource(); });
 
 function videasyUpdateSandboxButton(){
   const btn=document.getElementById('videasy-sandbox-toggle'); if(!btn) return;
