@@ -1,5 +1,5 @@
 // Bubux: Service Worker. Reseau d'abord (toujours la derniere version), cache en secours hors ligne.
-const CACHE_NAME = 'bubux-shell-v2';
+const CACHE_NAME = 'bubux-shell-v3';
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 

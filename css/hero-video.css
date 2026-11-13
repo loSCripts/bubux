@@ -1,0 +1,7 @@
+.hero-video{position:absolute;inset:0;overflow:hidden;opacity:0;transition:opacity .8s ease;pointer-events:none;z-index:0}
+.hero-video.on{opacity:1}
+.hero-video iframe,.hero-video>div{position:absolute;top:50%;left:50%;border:0;pointer-events:none!important;transform:translate(-50%,-50%) scale(1.25)}
+.hero-dots{position:absolute;top:calc(64px + var(--safe-t));left:0;right:0;z-index:3;display:flex;gap:5px;justify-content:center;padding:0 20px}
+.hero-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s ease}
+.hero-dots span.active{background:#fff;width:16px;border-radius:4px}
+

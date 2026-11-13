@@ -1,0 +1,29 @@
+BUBUX : OU EST QUOI
+
+index.html            La page (structure HTML). Elle charge les fichiers ci-dessous dans cet ordre.
+sw.js, manifest.json  Mode hors ligne et installation sur le telephone.
+
+css/   (le style, un fichier par partie)
+  fonts.css, base.css, layout.css, aurora.css, hero.css, hero-video.css
+  rows-cards.css, filters-search-lists.css, detail.css, nav-settings.css
+  modals-toasts.css, skeleton-shorts-provider.css
+  player.css, player-episodes.css      Lecteur et liste des episodes
+  ads.css                              Fenetre de la publicite
+  desktop.css                          Version ordinateur
+
+js/core/     Base : config.js (reglages TMDB), i18n.js (textes), state.js (donnees sauvegardees),
+             tmdb-api.js, router.js, utils.js, pwa.js, init.js (demarrage, TOUJOURS en dernier)
+js/ui/       Interface : toasts, modals, cards, scroll, settings, click-delegation (les clics)
+js/features/ Hero et bande-annonce, lignes infinies, questionnaire de gouts
+js/pages/    Une page par fichier : home, catalog, search, lists, detail, shorts
+js/player/   Lecteur : player-state.js (reglages, URL), player-open.js (ouvrir/fermer),
+             player-controls.js (boutons du haut), player-progress.js (reprise),
+             player-episodes.js (episodes, episode suivant)
+js/ads/      Publicites :
+               ad-config.js          LIEN DE LA PUB, temps minimum (3 s), une pub tous les N episodes
+               ad-gate.js            message d'avertissement, ouverture de la pub, validation des 3 s
+               redirect-blocking.js  blocage des redirections publicitaires du lecteur
+
+Important : l'ordre des <script> dans index.html compte (ce sont des scripts classiques, pour que
+le site marche aussi ouvert directement depuis un fichier). Un nouveau fichier JS s'ajoute avant
+js/core/init.js.

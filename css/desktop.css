@@ -1,0 +1,70 @@
+/* ============ VERSION ORDINATEUR (>=1024px). Le mobile n'est pas touche ============ */
+@media (min-width:1024px){
+  :root{--dpad:max(40px,calc((100vw - 1440px)/2 + 40px))}
+
+  /* marges laterales alignees sur une largeur de contenu confortable */
+  .page-header,.section-head,.row-scroll,.filters-row,.search-hero,.lists-header,
+  .detail-section,.grid-2col{padding-left:var(--dpad);padding-right:var(--dpad)}
+  .lists-count{padding-left:var(--dpad);padding-right:var(--dpad)}
+  .list-card{margin-left:var(--dpad);margin-right:var(--dpad)}
+  .install-banner{margin-left:var(--dpad);margin-right:var(--dpad)}
+  .hero-dots{padding:0 var(--dpad)}
+  .top-logo{left:var(--dpad)}
+
+  /* titres */
+  .page-header h1,.lists-header h1{font-size:2.6rem}
+  .page-header p{font-size:1rem}
+  .search-hero h1{font-size:3rem}
+  .search-bar{max-width:720px}
+  .section-head h2{font-size:1.5rem}
+  .detail-section h3{font-size:1.3rem}
+
+  /* hero */
+  .hero,.hero-content{min-height:72vh}
+  .hero-content{padding-left:var(--dpad);padding-right:var(--dpad);padding-bottom:48px}
+  .hero-logo-img{max-width:480px;max-height:150px}
+  .hero-title-fallback{font-size:4.2rem}
+  .hero-meta{font-size:.95rem}
+  .hero-desc{font-size:1.02rem;max-width:720px;-webkit-line-clamp:3}
+  .btn-play{padding:16px 36px;font-size:.98rem}
+  .btn-trailer{padding:16px 30px;font-size:.95rem}
+
+  /* cartes et grilles */
+  .row-scroll{gap:18px}
+  .row-scroll .card{width:200px}
+  .row-scroll .card.wide{width:320px}
+  .grid-2col{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:26px 20px}
+  .card-title{font-size:.98rem}
+  .card-meta{font-size:.82rem}
+  .card-media{transition:transform .25s ease}
+  .card:hover .card-media{transform:translateY(-4px)}
+
+  /* filtres, listes */
+  .pill{max-width:360px}
+  .list-card{max-width:760px}
+  .cast-item{width:92px}
+  .cast-item .avatar{width:76px;height:76px}
+  .cast-item .name{font-size:.8rem}
+  .provider-dropdown{left:var(--dpad);right:auto;width:360px}
+
+  /* navigation et boutons flottants */
+  .scroll-top-btn{right:32px}
+  .settings-popover{right:auto;left:calc(50% + 148px)}
+
+  /* fenetres modales */
+  .modal-card{max-width:520px}
+
+  /* lecteur : panneau des episodes en carte a droite plutot qu'en bandeau pleine largeur */
+  .videasy-episodes-panel{left:auto;right:24px;bottom:24px;width:440px;max-height:70%;border-radius:18px}
+  .videasy-header{padding-left:28px;padding-right:28px}
+  .videasy-header h3{font-size:1.15rem}
+  .videasy-next-episode-bar{right:32px}
+
+  /* shorts : texte limite en largeur */
+  .short-item .short-content{max-width:760px;padding-left:var(--dpad)}
+}
+@media (min-width:1700px){
+  .row-scroll .card{width:220px}
+  .row-scroll .card.wide{width:360px}
+  .grid-2col{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+}

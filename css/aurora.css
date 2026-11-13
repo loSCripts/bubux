@@ -1,0 +1,15 @@
+/* ============ AURORA ANIMATED BACKGROUND ============ */
+#aurora-bg{
+  position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--aurora-1);
+  opacity:0; transition:opacity .5s ease; pointer-events:none;
+  will-change:transform,filter;
+}
+#aurora-bg.active{opacity:1}
+#aurora-bg .blob{position:absolute;border-radius:50%;filter:blur(50px);mix-blend-mode:screen;will-change:transform}
+.blob-1{width:62vmax;height:62vmax;left:-18vmax;top:-22vmax;background:radial-gradient(circle,var(--aurora-4),transparent 70%);animation:drift1 26s ease-in-out infinite;opacity:.8}
+.blob-2{width:56vmax;height:56vmax;right:-14vmax;top:-6vmax;background:radial-gradient(circle,var(--aurora-5),transparent 70%);animation:drift2 31s ease-in-out infinite;opacity:.75}
+.blob-3{width:68vmax;height:68vmax;left:-14vmax;bottom:-28vmax;background:radial-gradient(circle,var(--aurora-3),transparent 70%);animation:drift3 27s ease-in-out infinite;opacity:.7}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12%,10%) scale(1.15)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-14%,8%) scale(1.1)}}
+@keyframes drift3{0%,100%{transform:translate(0,0) scale(1.05)}50%{transform:translate(10%,-12%) scale(1)}}
+

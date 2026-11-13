@@ -1,0 +1,34 @@
+/* ============ BOTTOM NAV ============ */
+.bottom-nav{
+  position:fixed; left:50%; bottom:calc(18px + var(--safe-b)); transform:translateX(-50%); z-index:50;
+  display:flex; align-items:center; gap:4px; padding:8px; border-radius:var(--r-pill);
+  background:var(--glass-bg); backdrop-filter:blur(14px) saturate(140%); border:1px solid var(--glass-border);
+  box-shadow:var(--shadow-pop); transition:transform .4s cubic-bezier(.22,1,.36,1);
+}
+.bottom-nav.nav-hidden{transform:translateX(-50%) translateY(160%)}
+.nav-btn{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.78); transition:background .25s ease,color .25s ease,transform .2s ease}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn.active{background:rgba(255,255,255,.18);color:#fff}
+.nav-btn:active{transform:scale(.9)}
+
+.scroll-top-btn{
+  position:fixed; right:18px; bottom:calc(94px + var(--safe-b)); z-index:49; width:46px;height:46px;border-radius:50%;
+  background:var(--glass-bg); backdrop-filter:blur(12px); border:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transform:translateY(10px) scale(.8);
+  transition:all .3s ease; box-shadow:var(--shadow-soft);
+}
+.scroll-top-btn.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+
+/* ============ SETTINGS POPOVER ============ */
+.settings-popover{
+  position:fixed; z-index:60; bottom:calc(90px + var(--safe-b)); right:14px; min-width:190px;
+  background:var(--glass-bg-strong); backdrop-filter:blur(14px); border:1px solid var(--glass-border);
+  border-radius:var(--r-modal); padding:6px; box-shadow:var(--shadow-pop);
+  transform-origin:bottom right; transition:all .22s ease;
+}
+.settings-popover.hidden{opacity:0;transform:scale(.9) translateY(6px);pointer-events:none}
+.popover-item{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border-radius:14px;font-size:.92rem;font-weight:500}
+.popover-item:active{background:rgba(255,255,255,.06)}
+.popover-divider{height:1px;background:rgba(255,255,255,.08);margin:2px 8px}
+

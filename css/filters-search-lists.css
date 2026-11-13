@@ -1,0 +1,44 @@
+/* ============ FILTER PILLS ============ */
+.filters-row{display:flex;flex-wrap:wrap;gap:10px;padding:16px 20px 4px}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.08);
+  padding:11px 16px;border-radius:var(--r-pill);font-size:.85rem;font-weight:500;color:var(--text-1);white-space:nowrap;
+  max-width:62vw;overflow:hidden;text-overflow:ellipsis}
+.pill svg{width:14px;height:14px}
+.pill.icon-only{padding:11px;width:44px;height:44px;justify-content:center}
+.pill .dot-active{width:6px;height:6px;border-radius:50%;background:var(--text-1);margin-right:2px}
+
+/* ============ SEARCH PAGE ============ */
+.search-hero{padding:calc(70px + var(--safe-t)) 20px 10px;text-align:left}
+.search-hero h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.9rem,8vw,2.5rem);margin-bottom:20px}
+.search-bar{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);
+  transition:border-color .2s ease,box-shadow .2s ease;
+  border-radius:var(--r-pill);padding:15px 20px}
+.search-bar:focus-within{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(124,58,237,.28)}
+.search-bar svg{width:19px;height:19px;color:var(--text-2);flex:none}
+.search-bar input{flex:1;color:var(--text-1);font-size:.95rem}
+.search-bar input:focus-visible{outline:none}
+.search-bar input::placeholder{color:var(--text-3)}
+.search-bar .clear-btn{width:20px;height:20px}
+.trending-label{text-align:center;color:var(--text-2);font-weight:500;font-size:1.05rem;margin:26px 0 14px}
+
+/* ============ LISTS PAGE ============ */
+.lists-header{display:flex;align-items:flex-start;justify-content:space-between;padding:calc(64px + var(--safe-t)) 20px 2px;gap:12px}
+.lists-header h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,7vw,2.15rem)}
+.btn-gradient{display:flex;align-items:center;gap:6px;background:var(--accent-grad);color:#fff;font-weight:700;
+  font-size:.85rem;padding:12px 18px;border-radius:var(--r-pill);white-space:nowrap;box-shadow:var(--shadow-soft)}
+.btn-gradient svg{width:16px;height:16px}
+.lists-count{color:var(--text-2);font-size:.88rem;padding:6px 20px 0}
+.empty-state{display:flex;flex-direction:column;align-items:center;text-align:center;padding:90px 40px;color:var(--text-3)}
+.empty-state svg{width:56px;height:56px;margin-bottom:22px;opacity:.5}
+.empty-state h3{color:var(--text-1);font-size:1.2rem;font-weight:700;margin-bottom:8px;opacity:.85}
+.empty-state p{font-size:.9rem;max-width:280px;line-height:1.4}
+.list-card{display:flex;align-items:center;gap:14px;padding:14px;background:var(--glass-bg);border:1px solid var(--glass-border);
+  border-radius:var(--r-card);margin:0 20px 12px}
+.list-card .thumbs{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:56px;height:56px;
+  border-radius:10px;overflow:hidden;flex:none;background:var(--bg-elevated)}
+.list-card .thumbs img{width:100%;height:100%;object-fit:cover}
+.list-card .info{flex:1;min-width:0}
+.list-card .info h4{font-weight:700;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-card .info p{color:var(--text-2);font-size:.8rem;margin-top:2px}
+.lists-grid-wrap{padding-top:14px;padding-bottom:40px}
+

@@ -1,0 +1,30 @@
+/* ============ SKELETON LOADERS ============ */
+.skel{background:linear-gradient(90deg,var(--bg-elevated) 25%,var(--bg-elevated-2) 50%,var(--bg-elevated) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:var(--r-card)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{aspect-ratio:2/3;width:100%}
+
+/* ============ SHORTS VIEW ============ */
+.shorts-wrap{height:100vh;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior-y:contain;touch-action:pan-y}
+.short-item{height:100vh;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;align-items:flex-end;background:#000}
+.short-item .short-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.75;transition:opacity .25s ease}
+.short-item .short-scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4),rgba(0,0,0,.15) 40%,rgba(0,0,0,.85))}
+.short-item .short-content{position:relative;z-index:2;padding:24px 20px calc(110px + var(--safe-b));width:100%}
+.short-item h3{font-family:var(--font-display);font-weight:700;font-size:1.3rem;margin-bottom:8px}
+.short-video-slot{position:absolute;inset:0;z-index:1}
+.short-video-slot iframe{position:absolute;top:50%;left:50%;width:100%;height:56.25vw;min-height:100%;min-width:177.78vh;transform:translate(-50%,-50%);border:none;pointer-events:none}
+.short-mute-btn{position:absolute;z-index:3;top:calc(18px + var(--safe-t));right:16px;width:42px;height:42px;border-radius:50%;
+  background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center}
+.short-mute-btn svg{width:20px;height:20px}
+.shorts-back-btn{position:fixed;top:calc(18px + var(--safe-t));left:14px;z-index:20}
+
+/* ============ PROVIDER DROPDOWN ============ */
+.provider-dropdown{position:absolute;z-index:10;left:20px;right:20px;top:100%;margin-top:6px;
+  background:var(--glass-bg-strong);backdrop-filter:blur(12px);border:1px solid var(--glass-border);
+  border-radius:18px;overflow:hidden;box-shadow:var(--shadow-pop);max-height:340px;overflow-y:auto}
+.provider-dropdown.hidden{display:none}
+.provider-item{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.provider-item:active{background:rgba(255,255,255,.06)}
+.provider-item img{width:32px;height:32px;border-radius:9px;object-fit:cover;background:var(--bg-elevated)}
+.provider-item.selected{background:rgba(255,255,255,.07)}
+
