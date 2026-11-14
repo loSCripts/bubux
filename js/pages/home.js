@@ -9,6 +9,7 @@ async function renderHome(root){
       <div class="top-logo">B</div>
       <section class="hero" id="home-hero"></section>
       <div id="install-banner-slot"></div>
+      <div id="import-banner-slot"></div>
       <div id="continue-watching-section"></div>
       <div id="for-you-section"></div>
       <div id="because-you-watched-section"></div>
@@ -17,6 +18,7 @@ async function renderHome(root){
       <div id="trending-tv-section"></div>
       <div id="home-more"></div>
     </div>`;
+  if(typeof maybeShowImportBanner==='function') maybeShowImportBanner();   // tout de suite, sans attendre le réseau
   await Promise.all([ensureGenres('movie'),ensureGenres('tv')]);
   maybeShowInstallBanner();
   try{

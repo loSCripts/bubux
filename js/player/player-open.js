@@ -74,6 +74,7 @@ async function videasyReallyOpen(mediaType,tmdbId,title,season,episode){
     nextBar.classList.remove('show');
   }
   videasyScheduleNextEpisodeSuggestion();
+  if(typeof videasyShowImportedNote==='function') videasyShowImportedNote(mediaType,tmdbId,s,e);
   videasyOpenToken=Date.now(); videasyLastCur=0; videasyRealMsgAt=0;
   { const rsec=videasyResumeSeconds(mediaType,tmdbId,s,e); if(rsec>0) videasyForceSeek(rsec,videasyOpenToken); }
 

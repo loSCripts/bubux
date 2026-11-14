@@ -6,6 +6,7 @@ async function renderSearch(root){
   root.innerHTML=`<div class="page">
       <button class="back-btn" data-action="go-back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="top-logo" style="left:64px">B</div>
+      <span class="app-version-tag">v17</span>
       <div class="search-hero"><h1>${t('discoverSomethingNew')}</h1>
         <div class="search-bar"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
           <input id="search-input" type="text" placeholder="${t('searchPlaceholder')}" autocomplete="off" value="${escapeHtml(searchState.query)}"></div>

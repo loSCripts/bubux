@@ -40,6 +40,7 @@ function openSettingsPanel(){
     <div class="install-banner"><svg viewBox="0 0 24 24" style="flex:none"><path d="M12 3v13m0 0 4-4m-4 4-4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
       <div class="txt"><strong>${t('installLuma')}</strong><span>${t('installDesc')}</span></div>
       <button class="btn-primary" style="flex:none;padding:10px 16px" data-action="install-pwa">${t('install')}</button></div>
+    ${(typeof importOfferActive==='function' && importOfferActive())?`<button class="btn-ghost" data-import="open" style="width:100%;text-align:center">${TL("Importer un rapport de l'ancienne version","Import a report from the old version")}</button>`:''}
     <button class="btn-ghost" data-action="reset-app-data" style="width:100%;text-align:center;color:var(--danger)">${t('resetData')}</button>
     <p class="credits-text">${t('tmdbCredit')}<br>${t('justwatchCredit')}</p>`);
   document.getElementById('region-select').addEventListener('change', e=>setRegion(e.target.value));

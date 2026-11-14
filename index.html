@@ -1,9 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ce site n'est plus disponible</title>
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+html,body{margin:0;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{min-height:100vh;min-height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 24px}
+.box{max-width:420px;width:100%}
+h1{font-size:24px;line-height:1.25;margin:0 0 14px;font-weight:700}
+p{margin:0;font-size:16px;line-height:1.5}
+a{color:#fff;text-decoration:underline;display:inline-block;overflow-wrap:anywhere}
+.warn{margin-top:30px;font-size:15px}
+button{margin-top:22px;background:#fff;color:#000;border:0;border-radius:999px;padding:14px 30px;font-size:16px;font-weight:700;font-family:inherit}
+.outils{max-width:420px;width:100%}
+.manuel{margin-top:22px}
+.manuel p{font-size:15px}
+.manuel textarea{display:block;box-sizing:border-box;width:100%;height:120px;margin-top:12px;padding:10px;background:#111;color:#fff;border:1px solid #555;border-radius:8px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace}
+/* Ordinateur seulement : le texte reste au centre de l'ecran, le bouton puis la
+   video passent dans une colonne a gauche (bouton au-dessus de la video, tous
+   deux alignes a gauche). Grille a trois colonnes, celle de droite vide : elle
+   garde le texte exactement centre. Sous 1100px de large il n'y aurait plus
+   assez de place a gauche, on garde alors la disposition du telephone. */
+@media (min-width:1100px){
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 420px minmax(0,1fr);align-items:center;padding:28px 40px}
+.box{grid-column:2;grid-row:1}
+.outils{grid-column:1;grid-row:1;justify-self:start;width:260px;text-align:left}
+.outils button{margin-top:0}
+.outils video{margin:28px 0 0 !important}
+}
+</style>
+<script>
+/* ======================================================================
+   INTERRUPTEUR GENERAL
+   true  : seule la page noire de fermeture s'affiche, l'ancienne appli
+           n'est ni chargee ni executee (ni pub, ni appel d'API).
+   false : retour en arriere, l'ancienne appli reprend a l'identique.
+   ====================================================================== */
+const SITE_FERME = true;
+
+(function () {
+  if (SITE_FERME) return;
+  /* Retour en arriere : on masque la page de fermeture, puis, une fois la
+     page lue, on remplace tout le document par l'ancienne appli rangee dans
+     <template id="ancienne-appli">. Le document est relu comme au premier
+     jour : scripts dans le meme ordre, DOMContentLoaded declenche normalement.
+     Le setTimeout est indispensable : reecrire le document pendant l'evenement
+     DOMContentLoaded lui-meme bloque l'analyse au premier <script src>
+     (verifie dans Chromium), alors qu'un tour de boucle plus tard tout passe.
+     Plan B : si quelque chose echoue avant le remplacement, la page de
+     fermeture redevient visible au lieu de laisser un ecran vide. */
+  var racine = document.documentElement;
+  racine.style.visibility = 'hidden';
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      try {
+        var modele = document.getElementById('ancienne-appli');
+        if (!modele) throw new Error('ancienne appli absente');
+        var html = '<!DOCTYPE html><html lang="en">' + modele.innerHTML;
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (e) {
+        racine.style.visibility = '';
+      }
+    }, 0);
+  });
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+<div class="box">
+<h1>Ce site n'est plus disponible.</h1>
+<img src="mariane.jpg" alt="La liberté n'a pas de bouton off" width="1159" height="912" style="display:block;width:100%;height:auto;margin:0 0 14px" onerror="this.style.display='none'">
+<p>Pour accéder à la nouvelle version, veuillez aller sur ce site : <a href="https://bubux-wiki.deed.page/">https://bubux-wiki.deed.page/</a></p>
+<p class="warn">⚠️ Attention : pour reprendre là où vous en étiez avec toutes vos séries, films, etc., veuillez appuyer sur ce bouton pour copier le rapport et le coller dans la nouvelle version pour retrouver là où vous en étiez.</p>
+</div>
+<div class="outils">
+<button id="copier" type="button">Copier le rapport</button>
+<video src="tuto-import.mp4#t=0.1" controls muted playsinline preload="metadata" style="display:block;margin:28px auto 0;width:min(260px,70vw);border-radius:12px" onerror="this.style.display='none'"></video>
+</div>
+</div>
+
+<!-- Ancienne appli, conservee telle quelle mais inerte : le contenu d'un
+     <template> n'est ni affiche, ni charge, ni execute. Il ne sert qu'au
+     retour en arriere (SITE_FERME = false). -->
+<template id="ancienne-appli">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Bubux — Discover Movies & Shows</title>
+<title>Bubux: Discover Movies & Shows</title>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="description" content="Bubux is a movie & TV discovery catalog powered by TMDB. Track what to watch, build lists, find where to stream.">
 <meta name="theme-color" content="#0a0a0e">
@@ -27,8 +117,6 @@
 <link rel="stylesheet" href="css/detail.css">
 <link rel="stylesheet" href="css/desktop.css">
 <link rel="stylesheet" href="css/ads.css">
-</head>
-<body>
 
 <!-- Animated aurora background (Search / Movies / TV / Lists) -->
 <div id="aurora-bg" aria-hidden="true">
@@ -110,6 +198,7 @@
       allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
       referrerpolicy="origin"></iframe>
     <div class="videasy-tip hide" id="videasy-tip">Un problème de chargement ou de langue ? Appuie sur « Il y a un problème ? » en haut pour passer au lecteur 2. La protection 🛡️ se désactive alors toute seule (tu peux la remettre si tu veux).</div>
+    <div class="videasy-tip hide" id="videasy-resume-note" style="top:calc(150px + var(--safe-t))"></div>
     <div class="videasy-rotate-hint">🔄 Tourne ton téléphone pour un plein écran optimal</div>
     <div class="videasy-unavailable" id="videasy-unavailable" style="display:none">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 8l8 8M16 8l-8 8"/></svg>
@@ -168,6 +257,199 @@
 <script src="js/ui/scroll.js"></script>
 <script src="js/ui/interactions.js"></script>
 <script src="js/ui/click-delegation.js"></script>
+<script src="js/features/import-report.js"></script>
 <script src="js/core/init.js"></script>
+</template>
+
+<script>
+(function () {
+  'use strict';
+  if (SITE_FERME === false) return;
+
+  var bouton = document.getElementById('copier');
+  if (!bouton) return;
+
+  /* Toute cle dont le nom evoque un secret reste sur l'appareil. */
+  var NOM_SECRET = /key|token|secret|auth/i;
+  /* Valeurs secretes reperees pendant la lecture : derniere verification avant la copie. */
+  var secrets = [];
+
+  function lire(cle) {
+    try { return window.localStorage.getItem(cle); } catch (e) { return null; }
+  }
+  function lireJson(cle) {
+    var texte = lire(cle);
+    if (!texte) return null;
+    try { return JSON.parse(texte); } catch (e) { return null; }
+  }
+  function estObjet(v) {
+    return !!v && typeof v === 'object' && !Array.isArray(v);
+  }
+  function noterSecret(v) {
+    if (typeof v === 'string') { if (v.length >= 8) secrets.push(v); }
+    else if (v && typeof v === 'object') Object.keys(v).forEach(function (k) { noterSecret(v[k]); });
+  }
+
+  /* Copie de l'etat sans l'objet auth (cle API) ni aucune cle au nom suspect. */
+  function etatSansSecrets(etat) {
+    var copie = {};
+    Object.keys(etat).forEach(function (k) {
+      if (NOM_SECRET.test(k)) noterSecret(etat[k]);
+      else copie[k] = etat[k];
+    });
+    return copie;
+  }
+
+  /* Les autres cles du localStorage, en texte brut comme elles sont stockees. */
+  function autresCles() {
+    var sortie = {};
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var nom = window.localStorage.key(i);
+        if (nom === 'luma_state') continue;
+        var valeur = window.localStorage.getItem(nom);
+        if (NOM_SECRET.test(nom)) {
+          try { noterSecret(JSON.parse(valeur)); } catch (e) { noterSecret(valeur); }
+          continue;
+        }
+        sortie[nom] = valeur;
+      }
+    } catch (e) {}
+    return sortie;
+  }
+
+  function brut() {
+    var etat = lireJson('luma_state');
+    return { luma_state: estObjet(etat) ? etatSansSecrets(etat) : {}, autres_cles: autresCles() };
+  }
+
+  function construireRapport() {
+    var etat = lireJson('luma_state');
+    if (!estObjet(etat)) etat = {};
+    var profil = estObjet(etat.profile) ? etat.profile : {};
+    var vus = {};
+    if (Array.isArray(etat.watched)) {
+      etat.watched.forEach(function (k) { vus[k] = 1; });
+    } else if (estObjet(etat.watched)) {
+      Object.keys(etat.watched).forEach(function (k) { if (etat.watched[k]) vus[k] = 1; });
+    }
+    return {
+      format: 'bubux-rapport',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      source: 'ancienne-version',
+      profil: { name: profil.name || '', color: profil.color || '' },
+      region: typeof etat.region === 'string' ? etat.region : '',
+      language: typeof etat.language === 'string' ? etat.language : '',
+      plateforme: etat.selectedProvider == null ? null : etat.selectedProvider,
+      onboardingVu: !!etat.seenOnboarding,
+      vus: vus,
+      reprises: Array.isArray(etat.continueWatching) ? etat.continueWatching.filter(estObjet) : [],
+      listes: Array.isArray(etat.lists) ? etat.lists.filter(estObjet) : [],
+      /* null quand le questionnaire n'a jamais ete rempli : un objet vide
+         ferait croire a la nouvelle version qu'il l'a ete. */
+      gouts: estObjet(etat.tastes) ? etat.tastes : null,
+      goutsDemandes: !!etat.tastesAsked,
+      reglages: {
+        videasySubs: lire('videasySubs') || '',
+        videasyAudioLang: lire('videasyAudioLang') || '',
+        videasySandbox: lire('videasySandbox') || ''
+      },
+      brut: brut()
+    };
+  }
+
+  /* Ne bloque jamais : si la lecture structuree plante, on copie quand meme
+     un rapport minimal avec la partie brute. */
+  function rapportTexte() {
+    var texte;
+    secrets.length = 0;
+    try {
+      texte = JSON.stringify(construireRapport());
+    } catch (e) {
+      try {
+        texte = JSON.stringify({ format: 'bubux-rapport', version: 1, exportedAt: new Date().toISOString(), source: 'ancienne-version', brut: brut() });
+      } catch (e2) {
+        texte = '{"format":"bubux-rapport","version":1,"source":"ancienne-version","brut":{}}';
+      }
+    }
+    secrets.forEach(function (s) { texte = texte.split(s).join(''); });
+    return texte;
+  }
+
+  /* Plan B de copie : textarea hors ecran + execCommand. */
+  function copierAncien(texte) {
+    var zone = document.createElement('textarea');
+    var ok = false;
+    zone.value = texte;
+    zone.setAttribute('readonly', '');
+    zone.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(zone);
+    try {
+      zone.select();
+      zone.setSelectionRange(0, texte.length);
+      ok = document.execCommand('copy');
+    } catch (e) { ok = false; }
+    document.body.removeChild(zone);
+    return ok;
+  }
+
+  /* Promesse qui vaut true si la copie a reussi, false sinon (ne rejette jamais). */
+  function copier(texte) {
+    return new Promise(function (resolve) {
+      function planB() {
+        var ok = false;
+        try { ok = copierAncien(texte); } catch (e) {}
+        resolve(ok);
+      }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texte).then(function () { resolve(true); }, planB);
+          return;
+        }
+      } catch (e) {}
+      planB();
+    });
+  }
+
+  /* Dernier recours : champ en lecture seule, affiche seulement si les deux copies ont echoue. */
+  var champ = null;
+  function afficherChamp(texte) {
+    var zone;
+    if (!champ) {
+      var phrase = document.createElement('p');
+      champ = document.createElement('div');
+      champ.className = 'manuel';
+      phrase.textContent = 'Copie ce texte à la main : appuie longuement, puis Copier.';
+      zone = document.createElement('textarea');
+      zone.readOnly = true;
+      champ.appendChild(phrase);
+      champ.appendChild(zone);
+      bouton.parentNode.insertBefore(champ, bouton.nextSibling);
+    }
+    zone = champ.querySelector('textarea');
+    zone.value = texte;
+    zone.focus();
+    zone.select();
+    try { zone.setSelectionRange(0, texte.length); } catch (e) {}
+  }
+  function retirerChamp() {
+    if (champ && champ.parentNode) champ.parentNode.removeChild(champ);
+    champ = null;
+  }
+
+  bouton.addEventListener('click', function () {
+    var texte = rapportTexte();
+    copier(texte).then(function (ok) {
+      if (ok) {
+        bouton.textContent = 'Rapport copié';
+        retirerChamp();
+      } else {
+        afficherChamp(texte);
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>

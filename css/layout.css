@@ -19,3 +19,9 @@
 .page-header h1{font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,7vw,2.15rem);letter-spacing:-.01em}
 .page-header p{color:var(--text-2);margin-top:6px;font-size:.92rem}
 
+/* Numéro de version : en haut à droite de la page Recherche, rouge, petit mais lisible */
+.app-version-tag{position:absolute;top:calc(22px + var(--safe-t));right:var(--dpad,18px);z-index:5;font-size:11px;font-weight:700;line-height:1;letter-spacing:.04em;color:#ef4444;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none;user-select:none}
+/* Import du rapport : champ de collage */
+.modal-field textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:var(--text-1,#fff);font-size:.8rem;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical;min-height:110px;box-sizing:border-box}
+.modal-field textarea::placeholder{color:var(--text-3)}
+.modal-field textarea:focus{outline:none;border-color:var(--accent-2)}
